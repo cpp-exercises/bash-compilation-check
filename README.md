@@ -1,0 +1,2 @@
+# bash-compilation-check
+cpp
