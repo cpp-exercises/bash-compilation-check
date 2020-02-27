@@ -1,0 +1,54 @@
+#!/bin/bash
+
+# redirect stderr to stdout: https://unix.stackexchange.com/q/505581/16569
+exec 2>&1
+
+printf "\n\n*** Grade exercise bash compilation check *** \n\n"
+
+ex() { 
+	echo "! ${@/eval/}" 
+	"$@"
+}
+
+exe() { 
+	echo "! ${@/eval/}" 
+	"$@"
+	ERROR=$?
+	if [ $ERROR -ne 0 ]
+	then 
+		printf "\n*** Error code: $ERROR. Grade: 0 ***\n"
+		exit 1
+	fi
+}
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+cd $DIR
+
+if [ ! -f BasicCheck.sh ]; then
+    echo "File BasicCheck.sh is not found. Grade: 0"
+    exit 1
+fi
+
+let right=0
+let wrong=0
+
+for caseZip in $( ls case*.zip ); do
+    exe unzip -u $caseZip    # creates a folder case*/
+    folder=${caseZip/.zip/}
+    caseDescription=$( cat "${folder}/info.txt" )
+    ex timeout 5 bash ./BasicCheck.sh $folder main
+    userOutput=$?
+    trueOutput=$( cat "${folder}/output.a" )
+    printf "\n$folder '$caseDescription':\n  * Your output=$userOutput\n  * True output=$trueOutput\n\n"
+    if [ "$userOutput" == "$trueOutput" ]; then
+        let right++
+    else
+        let wrong++
+    fi
+    exe rm -rf $folder
+done
+let "grade = right * 100 / (right + wrong)"
+
+printf "\n*** Right: $right. Wrong: $wrong. Grade: $grade ***\n"
+
+rm -f main.exe
